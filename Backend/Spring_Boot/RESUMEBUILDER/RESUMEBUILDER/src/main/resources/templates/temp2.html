@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .top-info { text-align: center; margin-bottom: 20px; }
+        .skills-grid { display: flex; flex-wrap: wrap; list-style: none; padding: 0; }
+        .skills-grid li { width: 50%; margin-bottom: 5px; }
+        h2 { background: #f4f4f4; padding: 5px; font-size: 16px; }
+    </style>
+</head>
+<body>
+    <div class="top-info">
+        <h1>{{FULL_NAME}}</h1>
+        <p>Phone: {{PHONE}} | Email: {{EMAIL}} | City, State: {{LOCATION}}</p>
+        <p>LinkedIn: {{LINKEDIN}} | GitHub: {{GITHUB}}</p>
+    </div>
+
+    <h2>SUMMARY</h2>
+    <p>{{SUMMARY}}.</p>
+
+    <h2>TECHNICAL SKILLS</h2>
+    <ul class="skills-grid">
+        {{SKILLS}}
+    </ul>
+
+    <h2>PROJECTS</h2>
+    <p><strong>{{PROJECT_TITLE}}</strong>: {{PROJECT_WORK}}.</p>
+
+    <h2>INTERNSHIP / TRAINING</h2>
+    <p><strong>{{INSTITUTE_NAME}}</strong>:{{INTERNSHIP_TRAINING}}.</p>
+</body>
+</html>

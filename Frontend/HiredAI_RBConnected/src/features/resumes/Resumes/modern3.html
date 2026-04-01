@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Modern Resume</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    color: #000;
+    line-height: 1.7;
+}
+
+/* Force real resume size */
+.resume {
+    width: 794px;
+    min-height: 1123px;
+    padding: 40px;
+    box-sizing: border-box;
+    background: white;
+}
+
+/* Force readable text size */
+.resume p,
+.resume div {
+    font-size: 20px;
+}
+
+.resume {
+    max-width: 900px;
+    margin: auto;
+}
+
+/* Header */
+.header {
+    padding: 20px;
+    border: 2px solid #000;
+    margin-bottom: 26px;
+}
+
+.header h1 {
+    font-size: 30px;
+    margin-bottom: 6px;
+}
+
+.header p {
+    font-size: 17px;
+}
+
+/* Section boxes */
+.section {
+    border: 1.5px solid #000;
+    padding: 18px;
+    margin-bottom: 22px;
+}
+
+.section-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+/* Content */
+.section-content {
+    font-size: 14px;
+}
+
+/* Experience items */
+.item {
+    margin-bottom: 12px;
+}
+
+.item strong {
+    font-weight: 600;
+}
+</style>
+</head>
+
+<body>
+
+<div class="resume">
+
+<!-- Header -->
+<div class="header">
+<h1>{{FULL_NAME}}</h1>
+<p>{{PROFESSIONAL_TITLE}} | {{EMAIL}} | {{PHONE}} | {{LOCATION}} | {{LINKEDIN}}</p>
+</div>
+
+<!-- Profile -->
+<div class="section">
+<div class="section-title">Profile</div>
+<div class="section-content">
+{{PROFILE}}
+</div>
+</div>
+
+<!-- Key Skills -->
+<div class="section">
+<div class="section-title">Key Skills</div>
+<div class="section-content">
+{{SKILLS}}
+</div>
+</div>
+
+<!-- Experience -->
+<div class="section">
+<div class="section-title">Experience</div>
+
+<div class="item">
+<strong>{{JOB_TITLE}}</strong> – {{COMPANY_NAME}}<br>
+{{JOB_DESCRIPTION}}
+</div>
+
+</div>
+
+<!-- Projects -->
+<div class="section">
+<div class="section-title">Projects</div>
+<div class="section-content">
+{{PROJECTS}}
+</div>
+</div>
+
+<!-- Education -->
+<div class="section">
+<div class="section-title">Education</div>
+<div class="section-content">
+{{EDUCATION}}
+</div>
+</div>
+
+<!-- Certifications -->
+<div class="section">
+<div class="section-title">Certifications</div>
+<div class="section-content">
+{{CERTIFICATIONS}}
+</div>
+</div>
+
+</div>
+
+</body>
+</html>

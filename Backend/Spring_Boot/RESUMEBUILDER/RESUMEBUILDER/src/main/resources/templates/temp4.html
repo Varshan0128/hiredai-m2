@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <style>
+        body { font-family: Georgia, serif; padding: 50px; }
+        .centered { text-align: center; }
+        .bold { font-weight: bold; }
+        hr { border: 0; border-top: 1px double #333; }
+    </style>
+</head>
+<body>
+    <div class="centered">
+        <h1>{{FULL_NAME}}</h1>
+        <p>Mobile: {{PHONE}} | Email: {{EMAIL}}</p>
+        <p>Location: {{LOCATION}}| LinkedIn: {{LINKEDIN}}</p>
+    </div>
+    <hr>
+
+    <p class="bold">PROFESSIONAL PROFILE</p>
+    <p>{{PROFILE}}</p>
+
+    <p class="bold">SKILL SET</p>
+    <ul>
+        {{SKILLS}}
+    </ul>
+
+    <p class="bold">QUALIFICATION</p>
+    <p>{{QUALIFICATION}}</p>
+
+    <p class="bold">CORE STRENGTHS</p>
+    <p>{{CORE_SKILLS}}</p>
+
+    <p class="bold">DECLARATION</p>
+    <p>{{DECLARATION}}</p>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Resume</title>
+    <style>
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    color: #000;
+    line-height: 1.7;
+}
+
+/* Force real resume size */
+.resume {
+    width: 794px;
+    min-height: 1123px;
+    padding: 26px;
+    box-sizing: border-box;
+    background: white;
+}
+
+/* Force readable text size */
+.resume p,
+.resume div {
+    font-size: 20px;
+}
+h1{
+     font-size: 30px;
+}
+        h2 {
+            margin-bottom: 5px;
+            font-size: 20px;
+        }
+        h2 {
+            border-bottom: 1px solid #000;
+            padding-bottom: 3px;
+            margin-top: 25px;
+        }
+    </style>
+</head>
+<body>
+<div class="resume">
+<h1>{{FULL_NAME}}</h1>
+<p>
+    Phone: {{PHONE}} <br>
+    Email: {{EMAIL}} <br>
+    Location: {{LOCATION}} <br>
+    LinkedIn: {{LINKEDIN}}
+</p>
+<h2> SUMMARY</h2>
+<p>{{SUMMARY}}</p>
+<h2>SKILLS</h2>
+<p>{{SKILLS}}</p>
+<h2>EDUCATION</h2>
+<p>
+<strong>DEGREE NAME</strong>
+</p>
+<p>{{DEGREE_NAME}}</p>
+<h2>PROJECTS WORK</h2>
+<p>
+<strong>{{PROJECT_TITLE}}</strong><br>
+
+<h2>INTERNSHIP / TRAINING</h2>
+<p>
+<strong>Organization Name:{{ORGANIZATION_NAME}}</strong><br>
+
+</p>
+<h2>CERTIFICATIONS</h2>
+<ul>
+    <li>Certification Name: {{CERTIFICATION_NAME}}</li>
+</ul>
+<h2>SOFT SKILLS</h2>
+<p>{{SOFT_SKILLS}}</p>
+<h2>DECLARATION</h2>
+<p>{{DECLARATION}}</p>
+<p>
+Place:{{PLACE}}<br>
+Date:{{DATE}} <br><br>
+<strong>{{FULL_NAME}}</strong>
+</p>
+
+</body>
+</html>

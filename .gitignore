@@ -1,0 +1,20 @@
+# Node
+node_modules/
+
+# Python
+__pycache__/
+*.pyc
+venv/
+
+# Env
+.env
+
+# Logs
+*.log
+
+# Binary files
+*.tar.gz
+node_exporter*
+
+# VS Code
+.vscode/

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Minimal Resume</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    margin: 40px;
+    color: #000;
+    line-height: 1.6;
+}
+
+.resume {
+    max-width: 800px;
+    margin: auto;
+}
+
+/* Header */
+.header {
+    text-align: center;
+    margin-bottom: 28px;
+}
+
+.header h1 {
+    font-size: 26px;
+    margin: 0;
+    font-weight: 600;
+}
+
+.header p {
+    font-size: 14px;
+    margin-top: 6px;
+}
+
+/* Section */
+.section {
+    margin-bottom: 22px;
+}
+
+.section-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #000;
+    text-transform: uppercase;
+}
+
+.section-content p {
+    margin: 4px 0;
+    font-size: 14px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="resume">
+
+<!-- Header -->
+<div class="header">
+<h1>{{FULL_NAME}}</h1>
+<p>{{EMAIL}} | {{PHONE}} | {{LOCATION}}</p>
+</div>
+
+<!-- Professional Summary -->
+<div class="section">
+<div class="section-title">Professional Summary</div>
+<div class="section-content">
+<p>{{PROFESSIONAL_SUMMARY}}</p>
+</div>
+</div>
+
+<!-- Skills -->
+<div class="section">
+<div class="section-title">Skills</div>
+<div class="section-content">
+<p>{{SKILLS}}</p>
+</div>
+</div>
+
+<!-- Experience -->
+<div class="section">
+<div class="section-title">Experience</div>
+<div class="section-content">
+<p>{{EXPERIENCE}}</p>
+</div>
+</div>
+
+<!-- Projects -->
+<div class="section">
+<div class="section-title">Projects</div>
+<div class="section-content">
+<p>{{PROJECTS}}</p>
+</div>
+</div>
+
+<!-- Education -->
+<div class="section">
+<div class="section-title">Education</div>
+<div class="section-content">
+<p>{{EDUCATION}}</p>
+</div>
+</div>
+
+<!-- Certifications -->
+<div class="section">
+<div class="section-title">Certifications</div>
+<div class="section-content">
+<p>{{CERTIFICATIONS}}</p>
+</div>
+</div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,81 @@
+version: "3.9"
+
+services:
+
+  postgres:
+    image: postgres:15
+    container_name: pg-master
+    restart: always
+    environment:
+      POSTGRES_DB: UserData
+      POSTGRES_USER: hiredai_user
+      POSTGRES_PASSWORD: hiredai@root
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - hiredai-network
+
+  auth-backend:
+    build: ./Backend/Spring_Boot/heiredAi/heiredAi
+    container_name: auth-backend
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      - hiredai-network
+
+  resume-backend:
+    build: ./Backend/Spring_Boot/RESUMEBUILDER/RESUMEBUILDER
+    container_name: resume-backend
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "8090:8080"
+    depends_on:
+      - postgres
+    networks:
+      - hiredai-network
+
+  ats-model:
+    build: ./Backend/Models/ats_fixed/backend
+    container_name: ats-model
+    restart: always
+    ports:
+      - "5000:5000"
+    networks:
+      - hiredai-network
+
+  suggestion-model:
+    build: ./Backend/Models/suggestionapiconctd
+    container_name: suggestion-model
+    restart: always
+    ports:
+      - "8000:8000"
+    networks:
+      - hiredai-network
+
+  frontend:
+    build: ./Frontend/HiredAI_RBConnected
+    container_name: frontend
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - auth-backend
+      - resume-backend
+    networks:
+      - hiredai-network
+
+networks:
+  hiredai-network:
+    driver: bridge
+
+volumes:
+  pgdata:

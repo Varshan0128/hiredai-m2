@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Professional Resume</title>
+
+<style>
+body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    margin: 40px;
+    color: #000;
+    line-height: 1.55;
+}
+
+.resume {
+    max-width: 880px;
+    margin: auto;
+}
+
+/* Header */
+.header {
+    padding-bottom: 18px;
+    margin-bottom: 28px;
+    border-bottom: 1.5px solid #000;
+}
+
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.header h1 {
+    font-size: 30px;
+    margin: 0;
+}
+
+.header .title {
+    font-size: 20px;
+    font-weight: 600;
+    margin-top: 4px;
+}
+
+.contact {
+    font-size: 15px;
+    text-align: right;
+}
+
+/* Sections */
+.section {
+    margin-bottom: 26px;
+    font-size: 19PX;
+}
+
+.section-title {
+    font-size: 25px;
+    font-weight: 530;
+    margin-bottom: 8px;
+}
+
+.section-content {
+    font-size: 19px;
+}
+
+/* Experience blocks */
+.experience-item {
+    margin-bottom: 14px;
+}
+
+.experience-item strong {
+    font-size: 14px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="resume">
+
+<!-- Header -->
+<div class="header">
+<div class="header-top">
+<div>
+<h1>{{FULL_NAME}}</h1>
+<div class="title">{{PROFESSIONAL_TITLE}}</div>
+</div>
+<div class="contact">
+{{EMAIL}}<br>
+{{PHONE}}<br>
+{{LOCATION}}<br>
+{{LINKEDIN}}
+</div>
+</div>
+</div>
+
+<!-- Profile -->
+<div class="section">
+<div class="section-title">Professional Profile</div>
+<div class="section-content">
+{{PROFESSIONAL_PROFILE}}
+</div>
+</div>
+
+<!-- Expertise -->
+<div class="section">
+<div class="section-title">Areas of Expertise</div>
+<div class="section-content">
+{{AREAS_OF_EXPERTISE}}
+</div>
+</div>
+</div>
+
+<!-- Experience -->
+<div class="section">
+<div class="section-title">Professional Experience</div>
+
+<div class="experience-item">
+<strong>{{JOB_TITLE}}</strong> — {{COMPANY_NAME}}<br>
+{{EXPERIENCE_DESCRIPTION}}
+</div>
+
+</div>
+
+<!-- Projects -->
+<div class="section">
+<div class="section-title">Selected Projects</div>
+<div class="section-content">
+{{PROJECTS}}
+</div>
+</div>
+
+<!-- Education -->
+<div class="section">
+<div class="section-title">Education</div>
+<div class="section-content">
+{{EDUCATION}}
+</div>
+</div>
+
+<!-- Certifications -->
+<div class="section">
+<div class="section-title">Certifications & Training</div>
+<div class="section-content">
+{{CERTIFICATIONS}}
+</div>
+</div>
+
+</div>
+
+</body>
+</html>

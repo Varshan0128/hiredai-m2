@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; padding: 30px; }
+        .header { border-bottom: 2px solid #444; margin-bottom: 15px; }
+        h1 { margin: 0; }
+        .contact { margin-bottom: 20px; }
+        h2 { text-transform: uppercase; font-size: 1.2rem; color: #2c3e50; border-bottom: 1px solid #eee; }
+        .section { margin-bottom: 15px; }
+    </style>
+</head>
+
+<body>
+<div class="header">
+    <h1>{{FULL_NAME}}</h1>
+    <div class="contact">
+        Phone: {{PHONE}}<br />
+        Email: {{EMAIL}}<br />
+        Location: {{LOCATION}}<br />
+        LinkedIn: {{LINKEDIN}}
+    </div>
+</div>
+
+<h2>PROFESSIONAL SUMMARY</h2>
+<p>{{SUMMARY}}</p>
+
+<h2>SKILLS</h2>
+<ul>
+    {{SKILLS}}
+</ul>
+
+<h2>EDUCATION</h2>
+<p>{{EDUCATION}}</p>
+
+<h2>PROJECTS</h2>
+<p>
+    <strong>{{PROJECT_TITLE}}</strong><br />
+    {{PROJECT_DESCRIPTION}}
+</p>
+
+<h2>DECLARATION</h2>
+<p>
+    {{DECLARATION}}
+</p>
+</body>
+</html>

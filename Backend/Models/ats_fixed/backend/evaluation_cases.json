@@ -1,0 +1,30 @@
+[
+  {
+    "name": "strong_backend_match",
+    "resume_text": "Jane Doe\njane@example.com\n+91 98765 43210\nLinkedIn: linkedin.com/in/janedoe\n\nSUMMARY\nBackend engineer with 4 years of experience building Python APIs.\n\nEXPERIENCE\nSoftware Engineer\n- Developed Python and FastAPI services for 50+ clients\n- Managed Docker deployments and CI/CD pipelines\n- Worked with AWS, PostgreSQL, and GitHub\n\nSKILLS\nPython, FastAPI, AWS, Docker, PostgreSQL, Git, CI/CD, communication, teamwork\n\nEDUCATION\nBachelor of Engineering in Computer Science 2022",
+    "job_description": "Looking for a backend engineer with Python, AWS, Docker, SQL, Git, and CI/CD experience.",
+    "expected_min_score": 70,
+    "expected_min_job_match": 75,
+    "expected_absent_skill_gaps": ["python", "aws", "docker", "git", "ci/cd"]
+  },
+  {
+    "name": "weak_retail_to_backend_match",
+    "resume_text": "John Smith\njohn@example.com\n+1 555 222 3333\n\nEXPERIENCE\nRetail associate handling billing, inventory, and customer support.\n\nSKILLS\nCustomer service, sales, teamwork\n\nEDUCATION\nBachelor degree 2021",
+    "job_description": "Hiring a backend platform engineer to build distributed systems with Python, Kubernetes, Docker, and AWS.",
+    "expected_max_score": 65,
+    "expected_max_job_match": 35
+  },
+  {
+    "name": "frontend_synonym_match",
+    "resume_text": "Anita\nanita@example.com\n+91 90000 12345\n\nEXPERIENCE\nFrontend developer\n- Built JS and React.js interfaces for customer dashboards\n- Used Node.js tooling and GitLab CI\n\nSKILLS\nJS, React.js, Node.js, HTML5, CSS3, GitLab CI, communication\n\nEDUCATION\nBachelor of Technology 2023",
+    "job_description": "Need a frontend developer with JavaScript, React, Node, HTML, CSS, Git, and communication skills.",
+    "expected_min_job_match": 70,
+    "expected_absent_skill_gaps": ["javascript", "react", "node", "html", "css", "communication"]
+  },
+  {
+    "name": "poorly_structured_resume",
+    "resume_text": "developer python aws docker team player built apps improved quality 3 years",
+    "job_description": "Software engineer with Python, AWS, Docker, and communication skills.",
+    "expected_max_score": 70
+  }
+]

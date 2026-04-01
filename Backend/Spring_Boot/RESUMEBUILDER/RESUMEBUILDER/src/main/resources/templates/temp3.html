@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <style>
+        body { font-family: 'Verdana', sans-serif; font-size: 13px; line-height: 1.4; }
+        .header-line { text-align: left; border-bottom: 1px solid #000; }
+        .section-title { font-weight: bold; margin-top: 15px; text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="header-line">
+        <h1>{{FULL_NAME}}</h1>
+        <p>Phone: {{PHONE}} | Email: {{EMAIL}} | City, State: {{LOCATION}} | LinkedIn: {{LINKEDIN}}</p>
+    </div>
+
+    <div class="section-title">PROFILE</div>
+    <p>{{PROFILE}}</p>
+
+    <div class="section-title">TECHNICAL COMPETENCIES</div>
+    <p>{{SKILLS}}</p>
+
+    <div class="section-title">INDUSTRIAL EXPOSURE</div>
+    <p><strong>{{INSTITUTE_NAME}}</strong>: {{INTERNSHIP_TRAINING}}</p>
+
+    <div class="section-title">INTERPERSONAL SKILLS</div>
+    <ul>
+        <li>{{ADDITIONAL_SKILLS}}</li>
+    </ul>
+</body>
+</html>
