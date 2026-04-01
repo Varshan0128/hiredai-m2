@@ -3,7 +3,7 @@ Resume Grammar Checker API (Debug Version)
 """
 
 from fastapi import FastAPI, File, UploadFile, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict, Optional
@@ -256,6 +256,11 @@ async def serve_frontend():
     </body>
     </html>
     """
+
+
+@app.get("/docs", include_in_schema=False)
+async def docs_redirect():
+    return RedirectResponse(url="/api/docs")
 
 
 # =============================================================================
