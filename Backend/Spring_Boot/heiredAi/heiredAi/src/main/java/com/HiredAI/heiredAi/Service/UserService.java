@@ -6,6 +6,7 @@ import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -36,16 +37,19 @@ public class UserService {
 	private final PasswordEncoder passwordEncoder;
 	private final EmailService emailService;
 	private final JwtUtil jwtUtil;
+	private final boolean requireEmailVerification;
 
 	public UserService(
 			UserRepository userRepository,
 			PasswordEncoder passwordEncoder,
 			EmailService emailService,
-			JwtUtil jwtUtil) {
+			JwtUtil jwtUtil,
+			@Value("${app.auth.require-email-verification:true}") boolean requireEmailVerification) {
 		this.userRepository = userRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.emailService = emailService;
 		this.jwtUtil = jwtUtil;
+		this.requireEmailVerification = requireEmailVerification;
 	}
 
 	public String Register(String Email, String pass, String firstName, String lastName, String mobile) {
@@ -65,9 +69,13 @@ public class UserService {
 		newUser.setMobile(mobile);
 		newUser.setUserName(firstName + " " + lastName);
 
-		newUser.setVerified(false);
+		newUser.setVerified(!requireEmailVerification);
 
 		userRepository.save(newUser);
+		if (!requireEmailVerification) {
+			return "Registered successfully. You can log in now.";
+		}
+
 		try {
 			emailService.sendOtpEmail(newUser);
 			return "Registered successfully. OTP sent to your email.";
@@ -87,7 +95,7 @@ public class UserService {
 		// ✅ Get the actual UserEntity object
 		UserEntity existingUser = user.get();
 
-		if (!existingUser.isVerified()) {
+		if (requireEmailVerification && !existingUser.isVerified()) {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("Message", "Email not verified"));
 		}
 

@@ -603,7 +603,14 @@ export default function SignIn({ onNavigate }: { onNavigate: (page: string) => v
       const data = await response.text(); // Backend returns String "Save" or similar
 
       if (response.ok) {
-        alert(data || "Registration successful. Please verify your email with OTP.");
+        const message = data || "Registration successful.";
+        alert(message);
+
+        if (message.toLowerCase().includes("log in now")) {
+          onNavigate("login");
+          return;
+        }
+
         onNavigate(`verify-otp?email=${encodeURIComponent(email)}`);
       } else {
         alert("Registration failed: " + data);

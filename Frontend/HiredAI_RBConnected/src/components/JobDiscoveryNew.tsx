@@ -44,6 +44,22 @@ interface StoredJobData {
   jobs?: unknown[];
 }
 
+function getValidApplyLink(value: unknown): string | undefined {
+  const link = String(value ?? '').trim();
+  if (!link) return undefined;
+
+  try {
+    const parsed = new URL(link);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      return parsed.toString();
+    }
+  } catch {
+    return undefined;
+  }
+
+  return undefined;
+}
+
 function inferJobType(job: Record<string, unknown>): Job['type'] {
   const source = `${job.type ?? job.job_type ?? job.workplace ?? job.work_mode ?? job['Employment Type'] ?? ""}`.toLowerCase();
   if (source.includes('hybrid')) return 'Hybrid';
@@ -73,13 +89,14 @@ function normalizeJob(job: unknown, index: number): Job | null {
           .split(',')
           .map((value) => value.trim())
           .filter(Boolean);
+  const link = getValidApplyLink(record.link ?? record.url);
 
   return {
-    id: String(record.id ?? record.job_id ?? record.link ?? record.url ?? record['ID'] ?? `${title}-${index}`),
+    id: String(record.id ?? record.job_id ?? link ?? record['ID'] ?? `${title}-${index}`),
     title,
     company,
     location,
-    link: String(record.link ?? record.url ?? "").trim() || undefined,
+    link,
     type: inferJobType(record),
     salary,
     experience,
@@ -143,15 +160,12 @@ export default function JobDiscoveryNew({ onNavigate }: JobDiscoveryNewProps) {
   };
 
   const handleApply = (job: Job) => {
-    if (job.link) {
-      window.open(job.link, '_blank', 'noopener,noreferrer');
-      toast.success(`Application opened for ${job.title}!`, {
-        description: 'Good luck with your application!',
-      });
-      return;
-    }
+    if (!job.link) return;
 
-    toast.error('Application link is not available for this job.');
+    window.open(job.link, '_blank', 'noopener,noreferrer');
+    toast.success(`Application opened for ${job.title}!`, {
+      description: 'Good luck with your application!',
+    });
   };
 
   const filteredJobs = useMemo(() => (
@@ -163,6 +177,7 @@ export default function JobDiscoveryNew({ onNavigate }: JobDiscoveryNewProps) {
       return matchesSearch && matchesType;
     })
   ), [jobs, searchQuery, selectedTypes]);
+  const selectedJobHasApplyLink = Boolean(selectedJob?.link);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -348,17 +363,29 @@ export default function JobDiscoveryNew({ onNavigate }: JobDiscoveryNewProps) {
                   <h4 className="font-['Poppins:Bold',sans-serif] text-neutral-800 mb-3">
                     Requirements
                   </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedJob.requirements.map((req) => (
-                      <span
-                        key={req}
-                        className="px-3 py-1 bg-gray-100 text-neutral-800 rounded-full font-['Poppins:Medium',sans-serif] text-sm"
-                      >
-                        {req}
-                      </span>
-                    ))}
-                  </div>
+                  {selectedJob.requirements.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedJob.requirements.map((req) => (
+                        <span
+                          key={req}
+                          className="px-3 py-1 bg-gray-100 text-neutral-800 rounded-full font-['Poppins:Medium',sans-serif] text-sm"
+                        >
+                          {req}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="font-['Poppins:Regular',sans-serif] text-neutral-500">
+                      Requirements are not available for this job yet.
+                    </p>
+                  )}
                 </div>
+
+                {!selectedJobHasApplyLink ? (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    Direct application is unavailable for this fallback job.
+                  </div>
+                ) : null}
 
                 {/* Actions */}
                 <div className="flex gap-3 pt-4">
@@ -380,11 +407,16 @@ export default function JobDiscoveryNew({ onNavigate }: JobDiscoveryNewProps) {
                   </motion.button>
                   <motion.button
                     onClick={() => handleApply(selectedJob)}
-                    className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-black text-white rounded-lg font-['Poppins:Bold',sans-serif]"
-                    whileHover={{ scale: 1.02, boxShadow: '0 8px 16px rgba(0,0,0,0.2)' }}
-                    whileTap={{ scale: 0.98 }}
+                    disabled={!selectedJobHasApplyLink}
+                    className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-['Poppins:Bold',sans-serif] transition-colors ${
+                      selectedJobHasApplyLink
+                        ? 'bg-black text-white'
+                        : 'cursor-not-allowed bg-neutral-200 text-neutral-500'
+                    }`}
+                    whileHover={selectedJobHasApplyLink ? { scale: 1.02, boxShadow: '0 8px 16px rgba(0,0,0,0.2)' } : undefined}
+                    whileTap={selectedJobHasApplyLink ? { scale: 0.98 } : undefined}
                   >
-                    Apply Now
+                    {selectedJobHasApplyLink ? 'Apply Now' : 'Apply Link Unavailable'}
                     <ExternalLink size={18} />
                   </motion.button>
                 </div>
