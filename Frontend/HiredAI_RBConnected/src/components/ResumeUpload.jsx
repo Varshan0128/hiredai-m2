@@ -4,6 +4,8 @@ import PageBackButton from "./PageBackButton";
 import { processJobs } from "../utils/autoApply";
 
 const acceptedExtensions = [".pdf", ".docx"];
+const invalidResumeMessage =
+  "Please upload a valid resume (PDF/DOCX with skills, education, experience)";
 const PYTHON_BASE_URL = (
   import.meta.env.VITE_PYTHON_API_URL ||
   "http://localhost:8000"
@@ -24,7 +26,8 @@ export default function ResumeUpload() {
     if (!file) return;
 
     if (!isSupportedFile(file)) {
-      setError("Please upload a PDF or DOCX file.");
+      setError(invalidResumeMessage);
+      window.alert(invalidResumeMessage);
       return;
     }
 
@@ -41,8 +44,21 @@ export default function ResumeUpload() {
       });
 
       if (!res1.ok) {
-        const err = await res1.text();
-        throw new Error("JOBS ERROR: " + err);
+        let backendMessage = "";
+        try {
+          const payload = await res1.json();
+          backendMessage = payload?.detail || "";
+        } catch {
+          backendMessage = "";
+        }
+
+        if (res1.status === 400) {
+          setError(invalidResumeMessage);
+          window.alert(invalidResumeMessage);
+          return;
+        }
+
+        throw new Error(backendMessage || "Unable to process the resume right now.");
       }
 
       const data1 = await res1.json();
@@ -73,9 +89,14 @@ export default function ResumeUpload() {
     } catch (err) {
       console.error("ERROR:", err);
       setError("Unable to process the resume right now.");
+      window.alert("Unable to process the resume right now.");
+      localStorage.removeItem("resumeUploaded");
       setIsUploading(false);
       setAutoApplyStatus("Auto Apply Failed");
       localStorage.setItem("autoApplyStatus", "Auto Apply Failed");
+      return;
+    } finally {
+      setIsUploading(false);
     }
   };
 

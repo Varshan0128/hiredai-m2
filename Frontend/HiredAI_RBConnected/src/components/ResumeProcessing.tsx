@@ -15,25 +15,6 @@ const TOTAL_DURATION_MS = 6000;
 const STEP_DURATION_MS = 1000;
 const JOB_DISCOVERY_ROUTE = "/jobs";
 
-const HOT_SKILLS = {
-  software: ["React", "TypeScript", "Node.js", "AWS", "Docker"],
-  data: ["Python", "SQL", "Machine Learning", "Power BI", "Statistics"],
-  design: ["Figma", "Design Systems", "UX Research", "Wireframing", "Prototyping"],
-  marketing: ["SEO", "Content Strategy", "Analytics", "Campaigns", "CRM"],
-  business: ["Stakeholder Management", "Excel", "Strategy", "Operations", "Communication"],
-};
-
-const JOB_CORPUS = [
-  { title: "Frontend Developer", type: "Remote", location: "India", domain: "software", requiredSkills: ["React", "JavaScript", "TypeScript", "CSS", "Git"], reason: "Strong alignment with modern web product teams.", aiRisk: 27 },
-  { title: "Full Stack Developer", type: "Hybrid", location: "Bengaluru", domain: "software", requiredSkills: ["React", "Node.js", "APIs", "SQL", "Docker"], reason: "Balanced frontend and backend ownership fits your profile.", aiRisk: 33 },
-  { title: "Data Analyst", type: "Hybrid", location: "Hyderabad", domain: "data", requiredSkills: ["Python", "SQL", "Excel", "Power BI", "Statistics"], reason: "Analytical and reporting strengths transfer well here.", aiRisk: 35 },
-  { title: "Product Analyst", type: "Remote", location: "Pune", domain: "data", requiredSkills: ["SQL", "Excel", "Dashboarding", "Experimentation", "Communication"], reason: "Good fit for turning user data into product insights.", aiRisk: 31 },
-  { title: "UI/UX Designer", type: "Remote", location: "Chennai", domain: "design", requiredSkills: ["Figma", "UX Research", "Wireframing", "Prototyping", "Design Systems"], reason: "Creative problem solving and user empathy are valuable here.", aiRisk: 24 },
-  { title: "Product Designer", type: "Hybrid", location: "Mumbai", domain: "design", requiredSkills: ["Figma", "Prototyping", "Design Systems", "Usability Testing", "Visual Design"], reason: "This path rewards creativity and cross-functional collaboration.", aiRisk: 22 },
-  { title: "Digital Marketing Specialist", type: "Remote", location: "Delhi", domain: "marketing", requiredSkills: ["SEO", "Analytics", "Content Strategy", "Campaigns", "CRM"], reason: "Growth-focused roles benefit from communication and experimentation.", aiRisk: 39 },
-  { title: "Operations Analyst", type: "On-site", location: "Gurugram", domain: "business", requiredSkills: ["Excel", "Operations", "Reporting", "Communication", "Problem Solving"], reason: "Structured execution and coordination are central here.", aiRisk: 29 },
-];
-
 type ParsedResume = {
   name: string;
   experienceYears: number;
@@ -42,6 +23,7 @@ type ParsedResume = {
   domain: string;
   gapAreas: string[];
   resumeText: string;
+  targetRole: string;
 };
 
 type StoredJobRecord = {
@@ -56,6 +38,29 @@ type StoredJobRecord = {
   description?: string;
   requirements?: string[];
   aiRisk?: number;
+  matchPct?: number;
+  reason?: string;
+  link?: string;
+  source?: string;
+};
+
+type ResumeAnalysisPayload = {
+  resumeText?: string;
+  selectedDomain?: string;
+  targetRole?: string;
+  skills?: string[];
+  score?: number;
+  job_matches?: StoredJobRecord[];
+  jobs?: StoredJobRecord[];
+  risk?: {
+    score?: number;
+    label?: string;
+    role?: string;
+    explanation?: string;
+  };
+  skill_gaps?: string[];
+  experienceYears?: number;
+  educationLevel?: string;
 };
 
 type MatchedJob = {
@@ -152,13 +157,6 @@ function normalizeSkill(raw: string) {
   return raw.trim().replace(/\s+/g, " ");
 }
 
-function inferDomainFromJob(job: StoredJobRecord) {
-  const source = [job.title, job.description, ...(job.requirements ?? [])]
-    .filter(Boolean)
-    .join(" ");
-  return detectDomain(source);
-}
-
 function readStoredJobs(): StoredJobRecord[] {
   const value = readJsonFromStorage<StoredJobRecord[] | { jobs?: StoredJobRecord[] }>("jobData");
   if (Array.isArray(value)) return value;
@@ -166,203 +164,134 @@ function readStoredJobs(): StoredJobRecord[] {
   return [];
 }
 
-function detectDomain(resumeText: string, storedDomain?: string | null) {
-  const hint = (storedDomain || "").toLowerCase();
+function detectDomain(storedDomain?: string | null, roleTitle?: string | null) {
+  const hint = `${storedDomain || ""} ${roleTitle || ""}`.toLowerCase();
   if (hint.includes("design")) return "design";
   if (hint.includes("data")) return "data";
   if (hint.includes("market")) return "marketing";
   if (hint.includes("business") || hint.includes("analyst")) return "business";
   if (hint.includes("software") || hint.includes("developer") || hint.includes("engineer")) return "software";
-
-  const lower = resumeText.toLowerCase();
-  if (/(figma|wireframe|prototype|ux|ui design)/.test(lower)) return "design";
-  if (/(python|sql|tableau|power bi|machine learning|data)/.test(lower)) return "data";
-  if (/(seo|content|campaign|crm|marketing)/.test(lower)) return "marketing";
-  if (/(excel|operations|stakeholder|business)/.test(lower)) return "business";
-  return "software";
+  return "general";
 }
 
 function extractResumeSource() {
-  const builderFlow = readJsonFromStorage<{
-    analysisResumeText?: string;
-    selectedRole?: string;
-    editorFormData?: { skills?: string[]; name?: string; education?: string };
-  }>("resume_builder_flow_v1");
-  const resumeAnalysis = readJsonFromStorage<{ resumeText?: string; selectedDomain?: string }>("resumeAnalysis");
-  const jobData = readJsonFromStorage<{ resumeText?: string; domain?: string }>("jobData");
-  const profile = readJsonFromStorage<{ topTraits?: string[] }>("psychometric_profile");
-  const storedJobs = readStoredJobs();
-
-  const builderSkills = builderFlow?.editorFormData?.skills ?? [];
-  const profileSkills = profile?.topTraits?.map(titleCase) ?? [];
-  const storedJobText = storedJobs
-    .flatMap((job) => [job.title, job.company, job.description, ...(job.requirements ?? [])])
-    .filter(Boolean)
-    .join(" ");
-  const fallbackText = [
-    builderFlow?.analysisResumeText,
-    builderFlow?.selectedRole,
-    builderFlow?.editorFormData?.name,
-    builderFlow?.editorFormData?.education,
-    storedJobText,
-    ...builderSkills,
-    ...profileSkills,
-  ]
-    .filter(Boolean)
-    .join(" ");
+  const resumeAnalysis = readJsonFromStorage<ResumeAnalysisPayload>("resumeAnalysis");
+  const storedJobs =
+    (Array.isArray(resumeAnalysis?.job_matches) && resumeAnalysis.job_matches.length
+      ? resumeAnalysis.job_matches
+      : Array.isArray(resumeAnalysis?.jobs) && resumeAnalysis.jobs.length
+        ? resumeAnalysis.jobs
+        : readStoredJobs());
 
   return {
-    resumeText:
-      builderFlow?.analysisResumeText ||
-      resumeAnalysis?.resumeText ||
-      jobData?.resumeText ||
-      fallbackText ||
-      "Software developer with experience in React JavaScript TypeScript APIs teamwork problem solving and modern product development.",
-    selectedDomain:
-      builderFlow?.selectedRole || resumeAnalysis?.selectedDomain || jobData?.domain || null,
+    resumeAnalysis,
+    resumeText: resumeAnalysis?.resumeText || "",
+    selectedDomain: resumeAnalysis?.selectedDomain || null,
     storedJobs,
   };
 }
 
-function parseResume(resumeText: string, selectedDomain?: string | null): ParsedResume {
-  const lower = resumeText.toLowerCase();
-  const skillPool = uniqueItems(
-    JOB_CORPUS.flatMap((job) => job.requiredSkills)
-      .concat(["Communication", "Problem Solving", "Leadership", "Git", "APIs", "Java", "Python", "SQL"])
-      .map(normalizeSkill),
-  );
-
-  const topSkills = skillPool.filter((skill) => lower.includes(skill.toLowerCase())).slice(0, 8);
-  const domain = detectDomain(resumeText, selectedDomain);
-  const hotSkills = HOT_SKILLS[domain as keyof typeof HOT_SKILLS] ?? HOT_SKILLS.software;
-  const gapAreas = hotSkills.filter((skill) => !topSkills.some((value) => value.toLowerCase() === skill.toLowerCase())).slice(0, 5);
-  const expMatch = resumeText.match(/(\d+)\+?\s*(?:years|yrs|year)/i);
-  const experienceYears = expMatch ? Number(expMatch[1]) : clamp(Math.round(topSkills.length / 2), 1, 8);
-
+function parseResume(resumeAnalysis: ResumeAnalysisPayload | null, resumeText: string, selectedDomain?: string | null): ParsedResume {
+  const topSkills = uniqueItems((resumeAnalysis?.skills ?? []).map(normalizeSkill));
+  const gapAreas = uniqueItems((resumeAnalysis?.skill_gaps ?? []).map(normalizeSkill));
+  const targetRole = (resumeAnalysis?.targetRole || "").trim();
+  const domain = detectDomain(selectedDomain, targetRole);
   return {
     name: "Candidate",
-    experienceYears,
-    topSkills: topSkills.length ? topSkills : hotSkills.slice(0, 4),
-    education: /b\.?tech|bachelor|master|mba|degree|engineering/i.test(resumeText) ? "Degree detected" : "Education details not explicit",
+    experienceYears: Number(resumeAnalysis?.experienceYears ?? 0),
+    topSkills,
+    education: resumeAnalysis?.educationLevel || "Not specified",
     domain,
     gapAreas,
     resumeText,
+    targetRole,
   };
 }
 
-function matchJobs(parsed: ParsedResume, storedJobs: StoredJobRecord[]): MatchedJob[] {
-  const jobSource = storedJobs.length
-    ? storedJobs.map((job) => ({
-        title: job.title ?? "Untitled role",
-        type: job.type ?? "Remote",
-        location: job.location ?? "India",
-        domain: inferDomainFromJob(job),
-        requiredSkills: Array.isArray(job.requirements) && job.requirements.length ? job.requirements : parsed.topSkills,
-        reason: job.description ?? "Good alignment with your current skill profile.",
-        aiRisk: typeof job.aiRisk === "number" ? job.aiRisk : 32,
-        company: job.company,
-        salary: job.salary,
-        posted: job.posted,
-      }))
-    : JOB_CORPUS;
-
-  const matchedJobs = jobSource.map((job) => {
-    const overlap = job.requiredSkills.filter((skill) =>
-      parsed.topSkills.some((value) => value.toLowerCase() === skill.toLowerCase()),
-    ).length;
-    const domainBonus = job.domain === parsed.domain ? 18 : 6;
-    const experienceBonus = clamp(parsed.experienceYears * 3, 4, 18);
-    const matchPct = clamp(Math.round((overlap / job.requiredSkills.length) * 55 + domainBonus + experienceBonus), 46, 96);
-
-    return {
-      title: job.title,
-      matchPct,
-      reason: overlap > 0 ? `${overlap} matching core skills including ${job.requiredSkills.slice(0, 2).join(" and ")}.` : job.reason,
-      type: job.type,
-      location: job.location,
-      aiRisk: job.aiRisk,
-      company: "company" in job ? job.company : undefined,
-      salary: "salary" in job ? job.salary : undefined,
-      posted: "posted" in job ? job.posted : undefined,
-    };
-  });
-
-  if (storedJobs.length) {
-    return matchedJobs.slice(0, Math.min(matchedJobs.length, 10));
-  }
-
-  return matchedJobs
-    .sort((a, b) => b.matchPct - a.matchPct)
-    .slice(0, 5);
+function matchJobs(storedJobs: StoredJobRecord[]): MatchedJob[] {
+  return storedJobs
+    .map((job) => ({
+      title: job.title ?? "Untitled role",
+      matchPct: clamp(Math.round(Number(job.matchPct ?? 0)), 0, 100),
+      reason: job.reason || job.description || "Relevant match from your extracted resume skills.",
+      type: job.type ?? "Not specified",
+      location: job.location ?? "Not specified",
+      aiRisk: clamp(Math.round(Number(job.aiRisk ?? 0)), 0, 100),
+      company: job.company,
+      salary: job.salary,
+      posted: job.posted,
+    }))
+    .sort((a, b) => b.matchPct - a.matchPct);
 }
 
-function analyzeDemand(parsed: ParsedResume): DemandResult {
-  const hotSkills = HOT_SKILLS[parsed.domain as keyof typeof HOT_SKILLS] ?? HOT_SKILLS.software;
-  const overlap = hotSkills.filter((skill) =>
-    parsed.topSkills.some((value) => value.toLowerCase() === skill.toLowerCase()),
-  ).length;
-  const demandScore = clamp(Math.round(58 + overlap * 8 + parsed.experienceYears * 2), 52, 95);
-  const demandLabel = demandScore >= 80 ? "High" : demandScore >= 65 ? "Stable" : "Growing";
+function analyzeDemand(parsed: ParsedResume, jobs: MatchedJob[]): DemandResult {
+  const averageMatch = jobs.length
+    ? jobs.reduce((sum, job) => sum + job.matchPct, 0) / jobs.length
+    : 0;
+  const demandScore = clamp(Math.round(averageMatch * 0.75 + Math.min(jobs.length, 10) * 4), 0, 100);
+  const demandLabel = demandScore >= 75 ? "High" : demandScore >= 45 ? "Moderate" : "Low";
+  const hotSkills = parsed.gapAreas.length
+    ? parsed.gapAreas
+    : uniqueItems(
+        jobs.flatMap((job) => job.reason.split(/[,.;]/).map((part) => part.trim())).filter(Boolean),
+      ).slice(0, 5);
 
   return {
     demandScore,
     demandLabel,
     hotSkills,
-    marketInsight: `${parsed.domain === "software" ? "Product teams" : "Hiring teams"} continue to value candidates with applied skills and adaptable execution.`,
+    marketInsight: jobs.length
+      ? `${jobs.length} relevant job matches were found for ${parsed.targetRole || "your resume profile"} using extracted resume skills only.`
+      : "No strong live job matches were found from the extracted resume content.",
   };
 }
 
-function scoreAiRisk(parsed: ParsedResume): RiskResult {
-  const automationPenalty = parsed.topSkills.filter((skill) =>
-    ["Excel", "SEO", "Data Entry", "Reporting", "Content Strategy", "SQL"].includes(skill),
-  ).length;
-  const creativityOffset = parsed.topSkills.filter((skill) =>
-    ["React", "Figma", "UX Research", "Leadership", "Problem Solving", "Communication"].includes(skill),
-  ).length;
-  const riskPct = clamp(Math.round(34 + automationPenalty * 6 - creativityOffset * 4), 18, 74);
-  const riskLabel = riskPct <= 30 ? "Low" : riskPct <= 50 ? "Medium" : "High";
+function scoreAiRisk(parsed: ParsedResume, resumeAnalysis: ResumeAnalysisPayload | null): RiskResult {
+  const riskPct = clamp(Math.round(Number(resumeAnalysis?.risk?.score ?? 0)), 0, 100);
+  const riskLabel = (resumeAnalysis?.risk?.label || (riskPct <= 30 ? "Low" : riskPct <= 55 ? "Medium" : "High")).trim();
 
   return {
     riskPct,
     riskLabel,
-    verdict:
-      riskLabel === "Low"
-        ? "Your profile leans toward collaborative and judgment-heavy work."
-        : riskLabel === "Medium"
-          ? "Your profile is resilient, but adding differentiated skills will strengthen it."
-          : "Your path can improve by shifting toward higher-creativity and strategic work.",
+    verdict: resumeAnalysis?.risk?.explanation || (
+      parsed.targetRole
+        ? `${parsed.targetRole} was identified as your closest role match from the uploaded resume, resulting in a ${riskLabel.toLowerCase()} automation-risk estimate.`
+        : `The extracted resume signals indicate a ${riskLabel.toLowerCase()} automation-risk estimate.`
+    ),
   };
 }
 
 function predictFuture(risk: RiskResult): { timeline: FuturePoint[]; summary: string } {
   const timeline = [2026, 2027, 2028, 2029, 2030].map((year, index) => {
-    const riskPct = clamp(risk.riskPct + index * 4 - 3, 15, 85);
+    const riskPct = clamp(risk.riskPct + Math.max(index - 1, 0), 0, 100);
     const label = riskPct <= 30 ? "Low" : riskPct <= 50 ? "Medium" : "High";
     return { year, riskPct, label };
   });
 
   return {
     timeline,
-    summary: `Projected automation exposure stays ${timeline[0].label.toLowerCase()} to ${timeline[timeline.length - 1].label.toLowerCase()} if your skills remain unchanged.`,
+    summary: `Projection starts from the current ${risk.riskLabel.toLowerCase()} risk estimate based on the extracted role and skills.`,
   };
 }
 
-function computeCareerScore(parsed: ParsedResume, jobs: MatchedJob[], demand: DemandResult, risk: RiskResult): CareerScoreResult {
-  const skillMatch = jobs.length ? Math.round(jobs.reduce((sum, job) => sum + job.matchPct, 0) / jobs.length) : 60;
-  const aiSafety = 100 - risk.riskPct;
-  const experience = clamp(parsed.experienceYears * 12, 20, 100);
-  const score = clamp(Math.round(skillMatch * 0.35 + demand.demandScore * 0.25 + aiSafety * 0.2 + experience * 0.2), 48, 95);
+function computeCareerScore(parsed: ParsedResume, jobs: MatchedJob[], demand: DemandResult, risk: RiskResult, resumeAnalysis: ResumeAnalysisPayload | null): CareerScoreResult {
+  const skillMatch = jobs.length ? Math.round(jobs.reduce((sum, job) => sum + job.matchPct, 0) / jobs.length) : 0;
+  const score = clamp(Math.round(Number(resumeAnalysis?.score ?? 0)), 0, 100);
 
   return {
     score,
-    verdict: score >= 80 ? "Strong short-term hiring position." : score >= 65 ? "Promising with a few focused improvements." : "Build depth in the highlighted areas to lift your outcomes.",
+    verdict:
+      score >= 75
+        ? `Strong profile based on ${parsed.topSkills.length} detected skills, ${parsed.experienceYears || 0} years of experience, and ${parsed.education.toLowerCase() || "education data"}.`
+        : score >= 45
+          ? `Moderate profile strength based on extracted skills, experience, and education evidence from the resume.`
+          : `Current score is limited by the skills, experience, and education explicitly present in the uploaded resume.`,
     skillMatch,
   };
 }
 
-function simulateWhatIf(parsed: ParsedResume, careerScore: CareerScoreResult, demand: DemandResult) {
-  return demand.hotSkills
-    .filter((skill) => !parsed.topSkills.some((value) => value.toLowerCase() === skill.toLowerCase()))
+function simulateWhatIf(parsed: ParsedResume, careerScore: CareerScoreResult) {
+  return parsed.gapAreas
     .slice(0, 3)
     .map((skill, index) => ({
       skill,
@@ -371,99 +300,78 @@ function simulateWhatIf(parsed: ParsedResume, careerScore: CareerScoreResult, de
     }));
 }
 
-function recommendSafeJobs(parsed: ParsedResume): SafeRole[] {
-  const rolePool: Record<string, SafeRole[]> = {
-    software: [
-      { title: "Solutions Engineer", fit: "Good fit for technical communication and problem solving.", risk: "Low risk" },
-      { title: "Product Engineer", fit: "Blends building, iteration, and cross-team judgment.", risk: "Low risk" },
-      { title: "Developer Advocate", fit: "Rewards teaching, storytelling, and technical depth.", risk: "Low risk" },
-    ],
-    data: [
-      { title: "Analytics Consultant", fit: "Combines insights with stakeholder communication.", risk: "Low risk" },
-      { title: "Product Analyst", fit: "Strong option for decision-oriented analytical work.", risk: "Low risk" },
-      { title: "Business Intelligence Lead", fit: "Higher-trust role focused on context and judgment.", risk: "Low risk" },
-    ],
-    design: [
-      { title: "UX Strategist", fit: "Research and synthesis remain highly resilient.", risk: "Low risk" },
-      { title: "Product Designer", fit: "Strong fit for systems thinking and creativity.", risk: "Low risk" },
-      { title: "Service Designer", fit: "Great path for broader journey and process design.", risk: "Low risk" },
-    ],
-    marketing: [
-      { title: "Brand Strategist", fit: "Creative positioning is harder to automate.", risk: "Low risk" },
-      { title: "Growth Manager", fit: "Blends experimentation with business context.", risk: "Low risk" },
-      { title: "Community Lead", fit: "Human trust and messaging are central here.", risk: "Low risk" },
-    ],
-    business: [
-      { title: "Program Manager", fit: "Cross-functional coordination is highly durable.", risk: "Low risk" },
-      { title: "Operations Manager", fit: "Judgment-heavy execution remains resilient.", risk: "Low risk" },
-      { title: "Customer Success Lead", fit: "Relationship-led problem solving is valuable.", risk: "Low risk" },
-    ],
-  };
-
-  return rolePool[parsed.domain] ?? rolePool.software;
+function recommendSafeJobs(jobs: MatchedJob[]): SafeRole[] {
+  return jobs
+    .filter((job) => job.aiRisk <= 30)
+    .slice(0, 3)
+    .map((job) => ({
+      title: job.title,
+      fit: job.reason,
+      risk: `${job.aiRisk}% risk`,
+    }));
 }
 
-function findHiddenOpportunities(parsed: ParsedResume) {
-  const opportunities: Record<string, string[]> = {
-    software: ["Technical Product Analyst", "Implementation Consultant", "QA Automation Specialist"],
-    data: ["Revenue Operations Analyst", "Fraud Analytics Associate", "Customer Insights Analyst"],
-    design: ["Design Research Coordinator", "Content Designer", "UX Writer"],
-    marketing: ["Lifecycle Marketing Specialist", "Partnerships Associate", "Customer Education Manager"],
-    business: ["Business Systems Analyst", "Project Coordinator", "Operations Strategy Associate"],
-  };
-
-  return opportunities[parsed.domain] ?? opportunities.software;
+function findHiddenOpportunities(jobs: MatchedJob[]) {
+  return uniqueItems(jobs.slice(2, 8).map((job) => job.title));
 }
 
-function buildRecruiterView(parsed: ParsedResume, demand: DemandResult): RecruiterView {
+function buildRecruiterView(parsed: ParsedResume, demand: DemandResult, jobs: MatchedJob[], risk: RiskResult): RecruiterView {
+  const strengths = [
+    parsed.topSkills.length ? `${parsed.topSkills.length} verified skills extracted from the resume` : "",
+    parsed.experienceYears ? `${parsed.experienceYears}+ years of explicit experience evidence` : "",
+    parsed.education && parsed.education !== "Not specified" ? `${parsed.education} education detected` : "",
+    jobs.length ? `${jobs.length} relevant live job matches found` : "",
+  ].filter(Boolean);
+
+  const weaknesses = [
+    ...parsed.gapAreas.slice(0, 3).map((gap) => `Missing target-role skill: ${gap}`),
+    !parsed.experienceYears ? "No explicit years-of-experience signal detected in the resume" : "",
+    parsed.education === "Not specified" ? "Education signal was not clearly detected in the resume" : "",
+  ].filter(Boolean);
+
+  const risks = [
+    risk.verdict,
+    !jobs.length ? "No strong live job matches were returned for the extracted resume profile" : "",
+  ].filter(Boolean);
+
   return {
-    strengths: [
-      `${parsed.experienceYears}+ years of transferable experience`,
-      `Visible strengths in ${parsed.topSkills.slice(0, 3).join(", ")}`,
-      `${demand.demandLabel} demand alignment in current market`,
-    ],
-    weaknesses: [
-      parsed.gapAreas[0] ? `Needs stronger depth in ${parsed.gapAreas[0]}` : "Needs more clearly differentiated specialist skill",
-      "Resume could show more quantified impact",
-      "Portfolio or proof-of-work signals can be stronger",
-    ],
-    risks: [
-      "Competing candidates may show more recent tooling depth",
-      "Generic skill phrasing may reduce recruiter confidence",
-      "Interview readiness will matter for top-match roles",
-    ],
+    strengths,
+    weaknesses,
+    risks,
   };
 }
 
-function buildLearningPath(parsed: ParsedResume, demand: DemandResult) {
-  return [
-    `Audit your current resume around ${parsed.topSkills.slice(0, 2).join(" and ")} outcomes.`,
-    `Add one in-demand capability such as ${demand.hotSkills[0]}.`,
-    "Build a focused proof-of-work project in your target role.",
-    "Quantify impact with metrics recruiters can scan quickly.",
-    "Apply to adjacent high-fit roles and refine based on response patterns.",
-  ];
+function buildLearningPath(parsed: ParsedResume) {
+  const path = [
+    parsed.targetRole ? `Prioritize skills expected for ${parsed.targetRole}.` : "",
+    ...parsed.gapAreas.slice(0, 3).map((gap) => `Build evidence for missing skill: ${gap}.`),
+    parsed.topSkills.length ? `Highlight project outcomes that prove ${parsed.topSkills.slice(0, 2).join(" and ")}.` : "",
+    !parsed.experienceYears ? "Add clearer experience duration signals if they exist in your background." : "",
+  ].filter(Boolean);
+
+  return path.slice(0, 5);
 }
 
-function estimateTimeToHire(score: number, demandScore: number) {
-  const fastTrack = score >= 80 && demandScore >= 75;
-  return fastTrack ? "4-10 weeks" : score >= 68 ? "8-18 weeks" : "12-24 weeks";
+function estimateTimeToHire(score: number, demandScore: number, jobCount: number) {
+  if (!jobCount) return "Unknown";
+  const fastTrack = score >= 80 && demandScore >= 70;
+  return fastTrack ? "4-8 weeks" : score >= 60 ? "8-16 weeks" : "12-20 weeks";
 }
 
 function runRoleRadarAnalysis(): AnalysisResult {
-  const { resumeText, selectedDomain, storedJobs } = extractResumeSource();
-  const parsed = parseResume(resumeText, selectedDomain);
-  const jobs = matchJobs(parsed, storedJobs);
-  const demand = analyzeDemand(parsed);
-  const risk = scoreAiRisk(parsed);
+  const { resumeAnalysis, resumeText, selectedDomain, storedJobs } = extractResumeSource();
+  const parsed = parseResume(resumeAnalysis, resumeText, selectedDomain);
+  const jobs = matchJobs(storedJobs);
+  const demand = analyzeDemand(parsed, jobs);
+  const risk = scoreAiRisk(parsed, resumeAnalysis);
   const future = predictFuture(risk);
-  const careerScore = computeCareerScore(parsed, jobs, demand, risk);
-  const simulations = simulateWhatIf(parsed, careerScore, demand);
-  const safeJobs = recommendSafeJobs(parsed);
-  const hiddenOpportunities = findHiddenOpportunities(parsed);
-  const recruiterView = buildRecruiterView(parsed, demand);
-  const learningPath = buildLearningPath(parsed, demand);
-  const timeToHire = estimateTimeToHire(careerScore.score, demand.demandScore);
+  const careerScore = computeCareerScore(parsed, jobs, demand, risk, resumeAnalysis);
+  const simulations = simulateWhatIf(parsed, careerScore);
+  const safeJobs = recommendSafeJobs(jobs);
+  const hiddenOpportunities = findHiddenOpportunities(jobs);
+  const recruiterView = buildRecruiterView(parsed, demand, jobs, risk);
+  const learningPath = buildLearningPath(parsed);
+  const timeToHire = estimateTimeToHire(careerScore.score, demand.demandScore, jobs.length);
 
   return {
     parsed,

@@ -23,6 +23,7 @@ from grammar_checker import (
     filter_by_category
 )
 
+from analysis_engine import analyze_resume
 from file_reader import read_resume_file
 from job_services import (
     dedupe_jobs,
@@ -33,6 +34,12 @@ from job_services import (
     fetch_serper_jobs,
     make_job_id,
     normalize_text,
+)
+from resume_validation import (
+    INVALID_RESUME_MESSAGE,
+    get_file_extension,
+    is_allowed_resume_upload,
+    is_valid_resume_text,
 )
 
 # Load the workspace-level .env (walk up from this file path).
@@ -161,6 +168,33 @@ COMMON_TECH_SKILLS = {
     "html", "css", "tailwind", "docker", "kubernetes", "aws", "azure",
     "power bi", "tableau", "excel", "figma", "seo", "analytics", "fastapi"
 }
+
+
+def _invalid_resume_exception() -> HTTPException:
+    return HTTPException(status_code=400, detail=INVALID_RESUME_MESSAGE)
+
+
+def _validate_upload_metadata(file: UploadFile) -> str:
+    if not file.filename:
+        raise _invalid_resume_exception()
+
+    suffix = get_file_extension(file.filename)
+    if not is_allowed_resume_upload(file.filename, file.content_type):
+        raise _invalid_resume_exception()
+
+    return suffix
+
+
+def _extract_and_validate_resume_text(temp_file: str) -> str:
+    try:
+        resume_text = read_resume_file(temp_file)
+    except Exception as exc:
+        raise _invalid_resume_exception() from exc
+
+    if not is_valid_resume_text(resume_text):
+        raise _invalid_resume_exception()
+
+    return resume_text
 
 
 def _extract_resume_skills(text: str, limit: int = 8) -> List[str]:
@@ -382,31 +416,35 @@ async def get_jobs_post(request: JobDiscoveryRequest):
 async def get_jobs_from_resume(file: UploadFile = File(...)):
     temp_file = None
     try:
-        if not file.filename:
-            raise HTTPException(status_code=400, detail="No file provided")
-
-        if not file.filename.lower().endswith((".pdf", ".docx", ".txt")):
-            raise HTTPException(status_code=400, detail="Unsupported format")
-
+        suffix = _validate_upload_metadata(file)
         content = await file.read()
-        suffix = Path(file.filename).suffix or ".txt"
 
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp:
             temp.write(content)
             temp_file = temp.name
 
-        resume_text = read_resume_file(temp_file)
-        skills = _extract_resume_skills(resume_text)
-        keywords = _keywords_from_signal(skills, resume_text, file.filename or "")
-        family = _infer_job_family(skills, resume_text, file.filename or "")
-
-        jobs = _get_jobs_with_fallback(keywords, "India", skills, file.filename or "")
+        resume_text = _extract_and_validate_resume_text(temp_file)
+        analysis = analyze_resume(
+            resume_text=resume_text,
+            location="India",
+            serpapi_key=SERPAPI_KEY,
+            serper_key=SERPER_API_KEY,
+            scrapingdog_key=SCRAPINGDOG_API_KEY,
+        )
+        jobs = analysis["job_matches"]
 
         return {
             "jobs": jobs,
-            "selectedDomain": family,
-            "skills": skills,
-            "query": keywords,
+            "resumeText": analysis["resume_text"],
+            "selectedDomain": analysis["selected_domain"],
+            "targetRole": analysis["target_role"],
+            "skills": analysis["skills"],
+            "score": analysis["score"],
+            "job_matches": jobs,
+            "risk": analysis["risk"],
+            "skill_gaps": analysis["skill_gaps"],
+            "experienceYears": analysis["experience_years"],
+            "educationLevel": analysis["education_level"],
         }
     except HTTPException:
         raise
@@ -503,19 +541,14 @@ async def analyze_file(file: UploadFile = File(...)):
     temp_file = None
 
     try:
-        if not file.filename:
-            raise HTTPException(status_code=400, detail="No file provided")
-
-        if not file.filename.lower().endswith(('.txt', '.pdf', '.docx')):
-            raise HTTPException(status_code=400, detail="Unsupported format")
-
+        suffix = _validate_upload_metadata(file)
         content = await file.read()
 
-        with tempfile.NamedTemporaryFile(delete=False) as temp:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp:
             temp.write(content)
             temp_file = temp.name
 
-        resume_text = read_resume_file(temp_file)
+        resume_text = _extract_and_validate_resume_text(temp_file)
 
         print("\n================ FILE DEBUG START ================")
         print("[DEBUG] EXTRACTED TEXT (first 500 chars):")
@@ -537,6 +570,8 @@ async def analyze_file(file: UploadFile = File(...)):
             message="File analysis completed"
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
         print("[FILE ERROR]", str(e))
         raise HTTPException(status_code=500, detail=str(e))
