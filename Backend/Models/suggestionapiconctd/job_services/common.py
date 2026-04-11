@@ -9,8 +9,8 @@ import time
 import requests
 
 
-DEFAULT_TIMEOUT = 10
-MAX_RETRIES = 2
+DEFAULT_TIMEOUT = 4
+MAX_RETRIES = 1
 USER_AGENT = "YenJobDiscovery/1.0"
 
 
@@ -99,6 +99,7 @@ def pick_apply_link(job: Dict[str, object]) -> str:
         job.get("source_link"),
         job.get("link"),
         job.get("url"),
+        job.get("redirect_link"),
         job.get("share_link"),
         job.get("redirect_url"),
     ]

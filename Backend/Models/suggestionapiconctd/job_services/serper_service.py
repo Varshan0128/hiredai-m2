@@ -17,10 +17,8 @@ def fetch_jobs(api_key: str, role: str, location: str, limit: int = 10) -> List[
             "Content-Type": "application/json",
         },
         json={
-            "q": f"{role} jobs in {location}",
-            "gl": "in",
-            "hl": "en",
-            "num": max(limit, 10),
+            "q": f"{role} jobs {location}",
+            "num": min(max(limit, 5), 10),
         },
     )
 

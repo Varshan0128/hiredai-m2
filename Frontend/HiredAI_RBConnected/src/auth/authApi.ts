@@ -2,6 +2,7 @@ import type { AuthUser } from "./types";
 
 const API_BASE = (import.meta.env.VITE_HEIREDAI_API_URL || "http://localhost:8080").replace(/\/$/, "");
 const DEV_AUTH_STORAGE_KEY = "hired-ai.dev-auth-user";
+const HAS_EXPLICIT_AUTH_API_URL = Boolean(import.meta.env.VITE_HEIREDAI_API_URL);
 
 function isLocalDevAuthFallbackEnabled() {
   return import.meta.env.DEV && window.location.hostname === "localhost";
@@ -100,6 +101,10 @@ export interface ResetPasswordPayload {
 }
 
 export async function fetchCurrentUser(signal?: AbortSignal): Promise<AuthUser | null> {
+  if (isLocalDevAuthFallbackEnabled() && !HAS_EXPLICIT_AUTH_API_URL) {
+    return readStoredDevAuthUser();
+  }
+
   try {
     const response = await fetch(`${API_BASE}/api/user/me`, {
       method: "GET",
@@ -118,6 +123,9 @@ export async function fetchCurrentUser(signal?: AbortSignal): Promise<AuthUser |
     const devAuthUser = readStoredDevAuthUser();
     if (devAuthUser) {
       return devAuthUser;
+    }
+    if (isLocalDevAuthFallbackEnabled() && error instanceof TypeError) {
+      return null;
     }
     throw error;
   }

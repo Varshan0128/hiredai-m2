@@ -376,6 +376,7 @@ function Loginbtn({ emailRef, passwordRef, onNavigate }: LoginbtnProps) {
         return;
       }
 
+      createLocalDevAuthSession(email);
       await refreshAuth();
       onNavigate("dashboard");
     } catch (err) {

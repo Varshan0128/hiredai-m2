@@ -60,8 +60,14 @@ def extract_resume_signals(text: str) -> Dict[str, object]:
 def is_valid_resume_text(text: str) -> bool:
     signals = extract_resume_signals(text)
     matched_sections = signals["matched_sections"]
+    normalized_text = " ".join((text or "").split())
+    word_count = len(normalized_text.split())
+    has_contact = bool(signals["has_email"]) or bool(signals["has_phone"])
+
     return (
-        len(matched_sections) >= 3
-        and bool(signals["has_email"])
-        and bool(signals["has_phone"])
+        word_count >= 25
+        and (
+            (len(matched_sections) >= 2 and has_contact)
+            or (len(matched_sections) >= 3)
+        )
     )

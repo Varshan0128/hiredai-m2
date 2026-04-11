@@ -10,6 +10,7 @@ const PYTHON_BASE_URL = (
   import.meta.env.VITE_PYTHON_API_URL ||
   "http://localhost:8000"
 ).replace(/\/$/, "");
+
 function isSupportedFile(file) {
   const lowerName = file.name.toLowerCase();
   return acceptedExtensions.some((extension) => lowerName.endsWith(extension));
@@ -21,6 +22,15 @@ export default function ResumeUpload() {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState("");
   const [autoApplyStatus, setAutoApplyStatus] = useState("");
+
+  const persistResumeAnalysis = (analysis) => {
+    const jobs = analysis?.jobs || [];
+
+    localStorage.removeItem("jobData");
+    localStorage.setItem("jobData", JSON.stringify(jobs));
+    localStorage.setItem("resumeAnalysis", JSON.stringify(analysis));
+    localStorage.setItem("resumeUploaded", "true");
+  };
 
   const handleUpload = async (file) => {
     if (!file) return;
@@ -65,10 +75,7 @@ export default function ResumeUpload() {
       const jobs = data1?.jobs || [];
       console.log("JOBS:", jobs);
 
-      localStorage.removeItem("jobData");
-      localStorage.setItem("jobData", JSON.stringify(jobs));
-      localStorage.setItem("resumeAnalysis", JSON.stringify(data1));
-      localStorage.setItem("resumeUploaded", "true");
+      persistResumeAnalysis(data1);
 
       try {
         setAutoApplyStatus("Analyzing jobs...");
@@ -88,6 +95,7 @@ export default function ResumeUpload() {
       return;
     } catch (err) {
       console.error("ERROR:", err);
+
       setError("Unable to process the resume right now.");
       window.alert("Unable to process the resume right now.");
       localStorage.removeItem("resumeUploaded");

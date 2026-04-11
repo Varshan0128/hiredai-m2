@@ -23,7 +23,7 @@ from grammar_checker import (
     filter_by_category
 )
 
-from analysis_engine import analyze_resume
+from analysis_engine import analyze_resume, discover_jobs_for_skills
 from file_reader import read_resume_file
 from job_services import (
     dedupe_jobs,
@@ -75,100 +75,6 @@ SERPAPI_KEY = (os.getenv("SERPAPI_KEY") or "").strip()
 SERPER_API_KEY = (os.getenv("SERPER_API_KEY") or "").strip()
 SCRAPINGDOG_API_KEY = (os.getenv("SCRAPINGDOG_API_KEY") or "").strip()
 
-ROLE_CATALOG: Dict[str, Dict[str, object]] = {
-    "frontend": {
-        "query": "Frontend Developer",
-        "keywords": {
-            "react", "next.js", "nextjs", "javascript", "typescript", "html",
-            "css", "tailwind", "redux", "frontend", "ui", "ux", "web"
-        },
-        "jobs": [
-            {"title": "Frontend Developer", "company": "Zoho", "location": "Chennai", "type": "On-site", "experience": "Entry Level", "salary": "$8k-$14k", "aiRisk": 26, "posted": "2 days ago", "requirements": ["React", "JavaScript", "CSS", "REST APIs"], "description": "Build and improve customer-facing web experiences with modern frontend tooling and strong UI polish."},
-            {"title": "React Developer", "company": "Freshworks", "location": "Chennai", "type": "Hybrid", "experience": "Mid Level", "salary": "$10k-$18k", "aiRisk": 24, "posted": "1 day ago", "requirements": ["React", "TypeScript", "Redux", "Testing Library"], "description": "Own reusable React components, improve performance, and collaborate closely with product and design teams."},
-            {"title": "UI Engineer", "company": "Razorpay", "location": "Bengaluru", "type": "Hybrid", "experience": "Mid Level", "salary": "$14k-$22k", "aiRisk": 28, "posted": "3 days ago", "requirements": ["TypeScript", "Design Systems", "Accessibility", "Storybook"], "description": "Translate product requirements into scalable interface systems with strong accessibility and maintainability."},
-            {"title": "Web Application Engineer", "company": "Paytm", "location": "Noida", "type": "Remote", "experience": "Mid Level", "salary": "$12k-$20k", "aiRisk": 30, "posted": "4 days ago", "requirements": ["React", "HTML", "CSS", "API Integration"], "description": "Develop responsive web applications, integrate APIs, and ship polished features in fast-moving product cycles."},
-            {"title": "Frontend Software Engineer", "company": "MakeMyTrip", "location": "Gurugram", "type": "Hybrid", "experience": "Senior", "salary": "$18k-$28k", "aiRisk": 27, "posted": "5 days ago", "requirements": ["React", "Performance Optimization", "TypeScript", "CI/CD"], "description": "Lead frontend feature delivery, improve runtime performance, and mentor developers on modern engineering practices."},
-        ],
-    },
-    "backend": {
-        "query": "Backend Developer",
-        "keywords": {
-            "java", "spring", "spring boot", "python", "node", "backend",
-            "api", "microservices", "sql", "postgresql", "mysql", "django"
-        },
-        "jobs": [
-            {"title": "Backend Developer", "company": "Infosys", "location": "Pune", "type": "Hybrid", "experience": "Entry Level", "salary": "$7k-$13k", "aiRisk": 32, "posted": "2 days ago", "requirements": ["Java", "Spring Boot", "SQL", "REST APIs"], "description": "Build backend services, integrate databases, and support stable production APIs for enterprise products."},
-            {"title": "Java Spring Boot Engineer", "company": "TCS", "location": "Hyderabad", "type": "On-site", "experience": "Mid Level", "salary": "$10k-$16k", "aiRisk": 34, "posted": "1 day ago", "requirements": ["Java", "Spring Boot", "Microservices", "PostgreSQL"], "description": "Design and maintain Spring Boot microservices, improve observability, and support secure business workflows."},
-            {"title": "API Developer", "company": "PhonePe", "location": "Bengaluru", "type": "Hybrid", "experience": "Mid Level", "salary": "$14k-$24k", "aiRisk": 31, "posted": "3 days ago", "requirements": ["REST APIs", "Python", "Databases", "Docker"], "description": "Create reliable APIs, optimize service performance, and collaborate with frontend teams on end-to-end delivery."},
-            {"title": "Python Backend Engineer", "company": "CRED", "location": "Bengaluru", "type": "Remote", "experience": "Mid Level", "salary": "$16k-$26k", "aiRisk": 33, "posted": "4 days ago", "requirements": ["Python", "FastAPI", "SQL", "Cloud Deployment"], "description": "Build Python services for internal platforms, improve code quality, and own backend feature execution."},
-            {"title": "Microservices Engineer", "company": "Tech Mahindra", "location": "Hyderabad", "type": "Hybrid", "experience": "Senior", "salary": "$18k-$30k", "aiRisk": 35, "posted": "6 days ago", "requirements": ["Java", "Spring", "Kafka", "Distributed Systems"], "description": "Develop resilient microservices, support event-driven systems, and improve service reliability at scale."},
-        ],
-    },
-    "data": {
-        "query": "Data Analyst",
-        "keywords": {
-            "data", "sql", "python", "excel", "power bi", "tableau",
-            "analytics", "dashboard", "statistics", "reporting"
-        },
-        "jobs": [
-            {"title": "Data Analyst", "company": "Tiger Analytics", "location": "Chennai", "type": "Hybrid", "experience": "Entry Level", "salary": "$8k-$15k", "aiRisk": 41, "posted": "2 days ago", "requirements": ["SQL", "Excel", "Dashboarding", "Reporting"], "description": "Analyze business data, create dashboards, and communicate insights that guide operational decisions."},
-            {"title": "Business Analyst", "company": "Accenture", "location": "Bengaluru", "type": "Hybrid", "experience": "Mid Level", "salary": "$10k-$18k", "aiRisk": 37, "posted": "1 day ago", "requirements": ["Excel", "SQL", "Stakeholder Communication", "Documentation"], "description": "Work with business stakeholders to turn data findings into actionable product and process recommendations."},
-            {"title": "BI Analyst", "company": "Deloitte", "location": "Hyderabad", "type": "On-site", "experience": "Mid Level", "salary": "$12k-$20k", "aiRisk": 39, "posted": "3 days ago", "requirements": ["Power BI", "SQL", "Data Modeling", "Visualization"], "description": "Own dashboard development, data validation, and recurring analytics for leadership and client teams."},
-            {"title": "Product Analyst", "company": "Swiggy", "location": "Bengaluru", "type": "Remote", "experience": "Mid Level", "salary": "$14k-$24k", "aiRisk": 34, "posted": "4 days ago", "requirements": ["SQL", "Experimentation", "Metrics", "Python"], "description": "Partner with product teams to evaluate experiments, define metrics, and improve user-facing outcomes."},
-            {"title": "Reporting Analyst", "company": "Wipro", "location": "Pune", "type": "Hybrid", "experience": "Entry Level", "salary": "$7k-$12k", "aiRisk": 43, "posted": "5 days ago", "requirements": ["Excel", "Reporting", "Data Cleaning", "SQL"], "description": "Prepare reports, validate data quality, and support recurring business reviews with clear analysis."},
-        ],
-    },
-    "design": {
-        "query": "UI UX Designer",
-        "keywords": {
-            "figma", "ui", "ux", "wireframe", "prototype", "design",
-            "research", "usability", "visual", "interaction"
-        },
-        "jobs": [
-            {"title": "UI/UX Designer", "company": "Myntra", "location": "Bengaluru", "type": "Hybrid", "experience": "Entry Level", "salary": "$9k-$16k", "aiRisk": 21, "posted": "2 days ago", "requirements": ["Figma", "Wireframing", "Prototyping", "Design Systems"], "description": "Design intuitive digital experiences and collaborate with developers to ship polished interfaces."},
-            {"title": "Product Designer", "company": "Meesho", "location": "Bengaluru", "type": "Remote", "experience": "Mid Level", "salary": "$14k-$24k", "aiRisk": 19, "posted": "1 day ago", "requirements": ["Figma", "User Flows", "Prototyping", "Research"], "description": "Own end-to-end product design work from discovery to delivery across growth and core product teams."},
-            {"title": "UX Researcher", "company": "NielsenIQ", "location": "Mumbai", "type": "Hybrid", "experience": "Mid Level", "salary": "$12k-$20k", "aiRisk": 18, "posted": "3 days ago", "requirements": ["Research", "Interviews", "Usability Testing", "Synthesis"], "description": "Plan user studies, synthesize findings, and influence product direction with evidence-based insights."},
-            {"title": "Visual Designer", "company": "Zeta", "location": "Hyderabad", "type": "On-site", "experience": "Mid Level", "salary": "$10k-$18k", "aiRisk": 23, "posted": "4 days ago", "requirements": ["Visual Design", "Figma", "Brand Consistency", "Typography"], "description": "Create high-quality interface visuals and ensure consistency across marketing and product experiences."},
-            {"title": "Design Systems Specialist", "company": "Flipkart", "location": "Bengaluru", "type": "Hybrid", "experience": "Senior", "salary": "$18k-$28k", "aiRisk": 20, "posted": "6 days ago", "requirements": ["Design Systems", "Tokens", "Figma", "Documentation"], "description": "Scale component systems, improve design handoff, and strengthen consistency across multiple products."},
-        ],
-    },
-    "marketing": {
-        "query": "Digital Marketing Specialist",
-        "keywords": {
-            "seo", "sem", "marketing", "campaign", "content", "analytics",
-            "social media", "branding", "crm", "growth"
-        },
-        "jobs": [
-            {"title": "Digital Marketing Specialist", "company": "UpGrad", "location": "Mumbai", "type": "Hybrid", "experience": "Entry Level", "salary": "$7k-$13k", "aiRisk": 38, "posted": "2 days ago", "requirements": ["SEO", "Campaign Analysis", "Content Strategy", "Analytics"], "description": "Plan and optimize digital campaigns, monitor performance, and improve lead generation across channels."},
-            {"title": "Content Marketing Executive", "company": "Byju's", "location": "Bengaluru", "type": "Remote", "experience": "Entry Level", "salary": "$6k-$11k", "aiRisk": 44, "posted": "1 day ago", "requirements": ["Content Writing", "SEO", "Editorial Planning", "Analytics"], "description": "Create and optimize educational content strategies that support traffic growth and engagement."},
-            {"title": "Growth Marketing Analyst", "company": "Dream11", "location": "Mumbai", "type": "Hybrid", "experience": "Mid Level", "salary": "$12k-$20k", "aiRisk": 35, "posted": "3 days ago", "requirements": ["Analytics", "Campaigns", "A/B Testing", "CRM"], "description": "Use data to improve acquisition funnels, campaign efficiency, and lifecycle marketing performance."},
-            {"title": "SEO Analyst", "company": "Webenza", "location": "Bengaluru", "type": "On-site", "experience": "Mid Level", "salary": "$8k-$14k", "aiRisk": 46, "posted": "4 days ago", "requirements": ["SEO", "Keyword Research", "Google Analytics", "Technical Audits"], "description": "Drive search visibility improvements through audits, optimization plans, and content collaboration."},
-            {"title": "Brand Marketing Associate", "company": "Nykaa", "location": "Mumbai", "type": "Hybrid", "experience": "Mid Level", "salary": "$10k-$18k", "aiRisk": 29, "posted": "5 days ago", "requirements": ["Brand Strategy", "Campaigns", "Coordination", "Reporting"], "description": "Support brand campaigns, cross-functional launches, and performance reviews across marketing initiatives."},
-        ],
-    },
-    "business": {
-        "query": "Operations Analyst",
-        "keywords": {
-            "operations", "management", "business", "coordination", "project",
-            "stakeholder", "customer", "process", "planning", "documentation"
-        },
-        "jobs": [
-            {"title": "Operations Analyst", "company": "Amazon", "location": "Hyderabad", "type": "On-site", "experience": "Entry Level", "salary": "$8k-$14k", "aiRisk": 28, "posted": "2 days ago", "requirements": ["Reporting", "Excel", "Process Improvement", "Communication"], "description": "Monitor operational KPIs, improve reporting flows, and support day-to-day execution teams."},
-            {"title": "Program Coordinator", "company": "Infosys BPM", "location": "Pune", "type": "Hybrid", "experience": "Entry Level", "salary": "$7k-$12k", "aiRisk": 25, "posted": "1 day ago", "requirements": ["Coordination", "Documentation", "Scheduling", "Stakeholder Management"], "description": "Support program delivery through structured planning, cross-team follow-up, and progress reporting."},
-            {"title": "Project Analyst", "company": "Capgemini", "location": "Bengaluru", "type": "Hybrid", "experience": "Mid Level", "salary": "$10k-$18k", "aiRisk": 27, "posted": "3 days ago", "requirements": ["Project Tracking", "Excel", "Communication", "Risk Logs"], "description": "Maintain project artifacts, track action items, and help teams stay aligned on timelines and dependencies."},
-            {"title": "Customer Success Associate", "company": "Chargebee", "location": "Chennai", "type": "Remote", "experience": "Mid Level", "salary": "$9k-$16k", "aiRisk": 23, "posted": "4 days ago", "requirements": ["Client Communication", "Problem Solving", "CRM", "Reporting"], "description": "Manage customer relationships, resolve issues, and help clients achieve value from the product."},
-            {"title": "Business Operations Executive", "company": "HCLTech", "location": "Noida", "type": "On-site", "experience": "Mid Level", "salary": "$9k-$15k", "aiRisk": 30, "posted": "6 days ago", "requirements": ["Operations", "Reporting", "Stakeholder Management", "Documentation"], "description": "Support business operations with structured analysis, cross-team coordination, and process follow-through."},
-        ],
-    },
-}
-
-COMMON_TECH_SKILLS = {
-    "python", "java", "spring boot", "spring", "react", "node.js", "node",
-    "javascript", "typescript", "sql", "mysql", "postgresql", "mongodb",
-    "html", "css", "tailwind", "docker", "kubernetes", "aws", "azure",
-    "power bi", "tableau", "excel", "figma", "seo", "analytics", "fastapi"
-}
-
 
 def _invalid_resume_exception() -> HTTPException:
     return HTTPException(status_code=400, detail=INVALID_RESUME_MESSAGE)
@@ -195,143 +101,6 @@ def _extract_and_validate_resume_text(temp_file: str) -> str:
         raise _invalid_resume_exception()
 
     return resume_text
-
-
-def _extract_resume_skills(text: str, limit: int = 8) -> List[str]:
-    haystack = f" {normalize_text(text).lower()} "
-    found: List[str] = []
-    for skill in sorted(COMMON_TECH_SKILLS, key=len, reverse=True):
-        skill_pattern = f" {skill.lower()} "
-        if skill_pattern in haystack:
-            found.append(skill.title())
-        elif re.search(rf"\b{re.escape(skill.lower())}\b", haystack):
-            found.append(skill.title())
-        if len(found) >= limit:
-            break
-    return found
-
-
-def _infer_job_family(skills: List[str], text: str, filename: str = "") -> str:
-    evidence = " ".join([filename, text, " ".join(skills)]).lower()
-    best_family = "backend"
-    best_score = 0
-
-    for family, config in ROLE_CATALOG.items():
-        keywords = config["keywords"]
-        score = 0
-        for keyword in keywords:
-            score += evidence.count(keyword)
-        if score > best_score:
-            best_score = score
-            best_family = family
-
-    return best_family
-
-
-def _keywords_from_signal(skills: List[str], text: str, filename: str = "") -> str:
-    family = _infer_job_family(skills, text, filename)
-    role_query = str(ROLE_CATALOG[family]["query"])
-    if skills:
-        return f"{role_query} {' '.join(skills[:3])}".strip()
-    return role_query
-
-
-def _extract_apply_link(job: Dict[str, object]) -> str:
-    link = None
-
-    apply_options = job.get("apply_options")
-    if isinstance(apply_options, list) and apply_options:
-        first = apply_options[0]
-        if isinstance(first, dict):
-            link = first.get("link")
-
-    if not link:
-        link = job.get("share_link")
-
-    if not link:
-        link = job.get("apply_link") or job.get("link") or job.get("url") or job.get("redirect_url")
-
-    return str(link or "").strip()
-
-
-def _normalize_external_jobs(
-    jobs: List[Dict[str, object]],
-    family: str,
-    skills: List[str],
-    location: str,
-    limit: int = 10,
-) -> List[Dict[str, object]]:
-    templates = list(ROLE_CATALOG[family]["jobs"])
-    normalized: List[Dict[str, object]] = []
-    seen_ids = set()
-
-    for index, job in enumerate(jobs[:limit]):
-        template = templates[index % len(templates)]
-        title = normalize_text(job.get("title") or "Untitled role")
-        company = normalize_text(job.get("company") or "Unknown company")
-        job_location = normalize_text(job.get("location") or location or "Location not specified")
-        description = normalize_text(job.get("description") or "No description available.")
-        job_id = make_job_id(title, company, job_location)
-        if job_id in seen_ids:
-            job_id = f"{job_id}-{index + 1}"
-        seen_ids.add(job_id)
-
-        requirements = job.get("requirements")
-        if not isinstance(requirements, list):
-            requirements = skills[:6]
-
-        normalized.append({
-            "id": job_id,
-            "title": title,
-            "company": company,
-            "location": job_location,
-            "link": normalize_text(job.get("apply_link") or _extract_apply_link(job)),
-            "apply_link": normalize_text(job.get("apply_link") or _extract_apply_link(job)),
-            "source": job.get("source") or "unknown",
-            "type": job.get("type") or "Remote",
-            "salary": job.get("salary") or "Not specified",
-            "experience": job.get("experience") or "Not specified",
-            "posted": job.get("posted") or "Recently",
-            "description": description,
-            "requirements": requirements,
-            "aiRisk": job.get("aiRisk") or template["aiRisk"],
-        })
-
-    return normalized
-
-
-def _get_jobs_with_fallback(role: str, location: str, skills: List[str], filename: str = "") -> List[Dict[str, object]]:
-    family = _infer_job_family(skills, role, filename)
-    provider_jobs: List[Dict[str, object]] = []
-
-    try:
-        provider_jobs.extend(fetch_serpapi_jobs(SERPAPI_KEY, role, location, limit=8))
-    except Exception as exc:
-        print(f"SerpAPI failed: {exc}")
-
-    try:
-        provider_jobs.extend(fetch_serper_jobs(SERPER_API_KEY, role, location, limit=8))
-    except Exception as exc:
-        print(f"Serper failed: {exc}")
-
-    if not provider_jobs:
-        try:
-            provider_jobs.extend(fetch_scrapingdog_jobs(SCRAPINGDOG_API_KEY, role, location, limit=10))
-        except Exception as exc:
-            print(f"ScrapingDog search failed: {exc}")
-
-    provider_jobs = dedupe_jobs(provider_jobs, limit=10)
-
-    try:
-        provider_jobs = enrich_jobs_with_details(
-            provider_jobs,
-            fetch_job_details,
-            SCRAPINGDOG_API_KEY,
-        )
-    except Exception as exc:
-        print(f"ScrapingDog detail enrichment failed: {exc}")
-
-    return _normalize_external_jobs(provider_jobs, family, skills, location)
 
 
 # =============================================================================
@@ -392,11 +161,29 @@ class AnalysisResponse(BaseModel):
 
 def _build_jobs_response(skills: List[str], location: str) -> Dict[str, object]:
     skills = [skill.strip() for skill in skills if isinstance(skill, str) and skill.strip()]
-    query = _keywords_from_signal(skills, " ".join(skills))
     location = location or "India"
-    jobs = _get_jobs_with_fallback(query, location, skills)
+    discovery = discover_jobs_for_skills(
+        skills=skills,
+        location=location,
+        resume_text=" ".join(skills),
+        serpapi_key=SERPAPI_KEY,
+        serper_key=SERPER_API_KEY,
+        scrapingdog_key=SCRAPINGDOG_API_KEY,
+    )
+    jobs = discovery["jobs"]
     source = jobs[0].get("source") if jobs else "none"
-    return {"jobs": jobs, "source": source, "count": len(jobs)}
+    return {
+        "jobs": jobs,
+        "roles": discovery["roles"],
+        "domains": discovery["domains"],
+        "demand": discovery["demand"],
+        "risk": discovery["risk"],
+        "targetRole": discovery["target_role"],
+        "selectedDomain": discovery["selected_domain"],
+        "structuredOutput": discovery["structured_output"],
+        "source": source,
+        "count": len(jobs),
+    }
 
 
 @app.get("/jobs")
@@ -439,12 +226,21 @@ async def get_jobs_from_resume(file: UploadFile = File(...)):
             "selectedDomain": analysis["selected_domain"],
             "targetRole": analysis["target_role"],
             "skills": analysis["skills"],
+            "tools": analysis["tools"],
+            "softSkills": analysis["soft_skills"],
+            "keywords": analysis["keywords"],
+            "domains": analysis["domains"],
+            "roles": analysis["roles"],
             "score": analysis["score"],
             "job_matches": jobs,
             "risk": analysis["risk"],
+            "demand": analysis["demand"],
             "skill_gaps": analysis["skill_gaps"],
             "experienceYears": analysis["experience_years"],
             "educationLevel": analysis["education_level"],
+            "expandedRoles": analysis["expanded_roles"],
+            "allRoles": analysis["all_roles"],
+            "structuredOutput": analysis["structured_output"],
         }
     except HTTPException:
         raise

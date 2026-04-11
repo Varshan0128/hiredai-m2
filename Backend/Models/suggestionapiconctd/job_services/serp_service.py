@@ -26,12 +26,19 @@ def fetch_jobs(api_key: str, role: str, location: str, limit: int = 10) -> List[
         if not isinstance(item, dict):
             continue
 
+        related_links = item.get("related_links")
+        primary_related_link = ""
+        if isinstance(related_links, list) and related_links:
+            first_link = related_links[0]
+            if isinstance(first_link, dict):
+                primary_related_link = normalize_text(first_link.get("link"))
+
         detected = item.get("detected_extensions")
         detected_extensions = detected if isinstance(detected, dict) else {}
         jobs.append(
             {
                 "title": normalize_text(item.get("title")),
-                "company": normalize_text(item.get("company_name") or item.get("via")),
+                "company": normalize_text(item.get("company_name")),
                 "location": normalize_text(item.get("location") or location),
                 "salary": extract_salary(
                     detected_extensions.get("salary"),
@@ -39,13 +46,13 @@ def fetch_jobs(api_key: str, role: str, location: str, limit: int = 10) -> List[
                     item.get("description"),
                 ),
                 "description": normalize_text(item.get("description")),
-                "apply_link": pick_apply_link(item),
+                "apply_link": primary_related_link or pick_apply_link(item),
                 "type": normalize_text(
                     detected_extensions.get("schedule_type")
                     or ("Remote" if detected_extensions.get("work_from_home") else "")
                 ) or "Not specified",
                 "posted": normalize_text(detected_extensions.get("posted_at")) or "Recently",
-                "source": "serpapi",
+                "source": normalize_text(item.get("via")) or "serpapi",
             }
         )
     return jobs

@@ -33,8 +33,6 @@ export interface PsychometricAnswer {
   impact: Record<string, number>;
 }
 
-const PSYCHOMETRIC_QUESTION_SOURCE = "/psychometric_questions.json";
-
 export const PSYCHOMETRIC_STORAGE_KEYS = {
   resumeCompleted: "psychometric_resume_completed",
   jobCompleted: "psychometric_job_completed",
@@ -45,18 +43,12 @@ export const PSYCHOMETRIC_STORAGE_KEYS = {
 
 export async function loadPsychometricQuestions(): Promise<PsychometricQuestion[]> {
   try {
-    const response = await fetch(PSYCHOMETRIC_QUESTION_SOURCE, {
-      headers: {
-        Accept: "application/json",
-      },
-    });
-
+    const response = await fetch("/psychometric_questions.json");
     if (!response.ok) {
       return [];
     }
 
     const parsed = (await response.json()) as unknown;
-    console.log("Loaded JSON:", parsed);
     return Array.isArray(parsed) ? (parsed as PsychometricQuestion[]) : [];
   } catch {
     return [];
